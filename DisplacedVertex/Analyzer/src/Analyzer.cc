@@ -112,6 +112,7 @@ class Analyzer : public edm::EDAnalyzer {
       std::vector<float>ptVec;
       std::vector<int>index;
       TLorentzVector v1, v2, v3, v4, vTot, ve, vmu, top2;
+      double maxMass;
       //myStruct_ all;
       //myStruct_ notLeptons; 
       //tracks_ dummyTrack;
@@ -425,6 +426,8 @@ float dv,dx,dy,dz ;
 	      eMass = E*E - px*px -py*py -pz*pz;
 	      std::cout<<"masa calculada: "<<eMass<<std::endl;
 	      h_mass_e->Fill(eMass);
+              if (eMass>maxMass)
+		{maxMass=eMass; }
 		  } 
 		  
 	 
@@ -753,6 +756,7 @@ file = new TFile("outfile.root","recreate");
 TH1::AddDirectory(true);
 //histo = new TH1F("pt","pt",1000,0,100);
 passHist = new TH1F("passed","passed triger",15,0,100);
+maxMass=0;
 e_count=0;
 m_count=0;
 ev = 0;
@@ -760,7 +764,7 @@ if1 = 0;
 if2 = 0;
 if3 = 0;
 h_mass_mu = new TH1F("muonM","Muon mass",50,0,1000);
-h_mass_e = new TH1F("electronM", "electron mass",50,0,1000);
+h_mass_e = new TH1F("electronM", "electron mass",50,0,10000);
 top2Mass_hist = new TH1F("top2M","top two jets mass",200,0,1000000);
 h_secVert = new TH1F("transverse displacement 1", "transverse displacement 2",100,0,50);
 //myCanvas = new TCanvas("myCanvas");
@@ -800,6 +804,7 @@ std::cout<<"Muons found "<<m_count<<std::endl;
 std::cout<<"primer if "<<if1<<std::endl;	
 std::cout<<"segundo if "<<if2<<std::endl;
 std::cout<<"tercer if "<<if3<<std::endl;
+ std::cout<<"masa maxima encontrada: "<<maxMass<<std::endl;
  divHist->Divide(allHist);
 file->Write();
 file->Close();
