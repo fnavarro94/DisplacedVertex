@@ -92,6 +92,8 @@ class Analyzer : public edm::EDAnalyzer {
       //TH1F * top2Mass_hist;
       TH1F * h_mass_mu;
       TH1F * h_mass_e;
+      TH1F * h_mEffSimu;
+      TH1F * h_mEffSimuGen;
       //TH1F * allHist;
       //TH1F * divHist;
       //TH1F * jetMass;
@@ -100,7 +102,7 @@ class Analyzer : public edm::EDAnalyzer {
       TH1F * h_Lxy_e;
       TH1F * h_Lxy_m;
       TTree * myTree;
-      int e_count, m_count,if1,if2,if3,ev, numElectrones, numPositrones, corr;
+      int e_count, m_count,if1,if2,if3,ev, numElectrones, numPositrones, corr, event;
      // TCanvas * myCanvas;
      // Lepton * mylep;
       //struct tracks_ {float pt; float  eta;};
@@ -177,8 +179,9 @@ Analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    Handle<TrackCollection> tracks;
    std::vector<Handle<TrackCollection>> track_vec;
     std::vector<TrackCollection::const_iterator> itTrack_vecP;
+    std::vector<TrackCollection::const_iterator> itTrack_vecP2;
     std::vector<TrackCollection::const_iterator> itTrack_vecM;
-    std::vector<double> itTrackEnergyP, itTrackEnergyM;
+    //std::vector<double> itTrackEnergyP, itTrackEnergyM;
    iEvent.getByLabel(trackTags_,tracks);
    std::cout<<"tracktags_: "<<trackTags_<<std::endl;
      
@@ -263,8 +266,8 @@ p_vec.clear();
 e_vec.clear();
 itTrack_vecP.clear();
 itTrack_vecM.clear();
-itTrackEnergyP.clear();
-itTrackEnergyM.clear();
+//itTrackEnergyP.clear();
+//itTrackEnergyM.clear();
 int trackC; // cuenta las vueltas del track loop
 trackC = 0;
 for(TrackCollection::const_iterator itTrack = tracks->begin();
@@ -295,20 +298,24 @@ for(TrackCollection::const_iterator itTrack = tracks->begin();
 			             double dEta2 =pow( itTrack->eta()-obj.eta(),2); 
 						 double dPhi2 =pow( itTrack->phi()-obj.phi(),2);
 						 double dR = sqrt(dPhi2+dEta2);
-						 //std::cout<<"energia del trigger object: "<<obj.energy()<<" pt: "<<obj.pt()<<" eta: "<<obj.eta()<<std::endl;
-						  if((dR<0.1)&&(abs(itTrack->pt() - obj.pt()) < 3)){electron_candidates++; e_count++;    if3++; 
+						 double ptotT , ptotO;
+						 ptotT = sqrt((itTrack->pt())*(itTrack->pt()) +itTrack->pz()*itTrack->pz());
+						 ptotO = sqrt(obj.pt()*obj.pt() + obj.pz()*obj.pz());
+						 
+						 std::cout<<"energia del trigger object: "<<obj.energy()<<" pt: "<<obj.pt()<<" eta: "<<obj.eta()<<std::endl;
+						  if((dR<0.1)&& abs(ptotT - ptotO) < 3){electron_candidates++; e_count++;    if3++; 
 							 // std::cout<<"momento: "<<itTrack->pt()<<std::endl;
 							    p_vec.push_back(itTrack->pt());
 							    e_vec.push_back(obj.energy());
 							    if(itTrack->charge() == 1){
 							    itTrack_vecP.push_back(itTrack);
-							    itTrackEnergyP.push_back(obj.energy());                          
+							   // itTrackEnergyP.push_back(obj.energy());                          
 							    std::cout<<"                               energia (matching loop) +: "<< obj.energy()<<std::endl;
 							    std::cout<<"                               pt track: "<< itTrack->pt()<<" pt obj: "<<obj.pt()<<std::endl;
 							                               }
 							    else if (itTrack->charge() == -1){
 							    itTrack_vecM.push_back(itTrack);
-							    itTrackEnergyM.push_back(obj.energy());
+							   // itTrackEnergyM.push_back(obj.energy());
 							    std::cout<<"                               energia (matching loop) -: "<< obj.energy()<<std::endl;
 							    std::cout<<"                               pt track: "<< itTrack->pt()<<" pt obj: "<<obj.pt()<<std::endl;                   
 							                        }
@@ -377,12 +384,12 @@ for(unsigned int i = 0; i<itTrack_vecP.size(); i ++){
 	      py = itTrack_vecP[i]->py() + itTrack_vecM[j]->py();
 	      pz = itTrack_vecP[i]->pz() + itTrack_vecM[j]->pz();
 	      //E = itTrackEnergyP[i] + itTrackEnergyM[j];
-	      E1 = itTrack_vecP[i]->pt();
-	      E2 = itTrack_vecP[j]->pt();
+	      E1 = sqrt(itTrack_vecP[i]->pt()*itTrack_vecP[i]->pt() + itTrack_vecP[i]->pz()*itTrack_vecP[i]->pz());
+	      E2 = sqrt(itTrack_vecM[j]->pt()*itTrack_vecM[j]->pt() + itTrack_vecM[j]->pz()*itTrack_vecM[j]->pz());
 	      E  = E1 + E2;
 	      
 	      std::cout<<"px: "<<px<<" py: "<<py<<" pz: "<<pz<< " E: "<<E<<" i: "<<i<<" j: "<<j<<std::endl;
-	      std::cout<<"energia +"<<itTrackEnergyP[i]<<" energia - :"<<itTrackEnergyM[j]<<std::endl;
+	     // std::cout<<"energia +"<<itTrackEnergyP[i]<<" energia - :"<<itTrackEnergyM[j]<<std::endl;
 	      eMass = sqrt(E*E - px*px -py*py -pz*pz);
 	      std::cout<<"masa calculada: "<<eMass<<std::endl;
 	      h_mass_e->Fill(eMass);
@@ -436,9 +443,12 @@ if(m_filterIndex<trigEvent->sizeFilters()){
 p_vec.clear();
 e_vec.clear();
 itTrack_vecP.clear();
+itTrack_vecP2.clear();
 itTrack_vecM.clear();
-itTrackEnergyP.clear();
-itTrackEnergyM.clear(); 
+//itTrackEnergyP.clear();
+//itTrackEnergyM.clear(); 
+
+std::cout<<"primero "<<itTrack_vecP.size()<<std::endl;
 
  
  for(TrackCollection::const_iterator itTrack = tracks->begin();
@@ -455,25 +465,31 @@ itTrackEnergyM.clear();
 	            //now loop of the trigger objects passing filter
                 for(trigger::Keys::const_iterator keyIt=trigKeys.begin();keyIt!=trigKeys.end();++keyIt){ 
                 const trigger::TriggerObject& obj = m_trigObjColl[*keyIt];
-			       
-			       //std::cout<<"                        vuelta "<<objC<< " del loop de objetos"<<std::endl;
+			       std::cout<<"energia del trigger object: "<<obj.energy()<<" pt: "<<obj.pt()<<" eta: "<<obj.eta()<<std::endl;
+			      ///std::cout<<"                        vuelta "<<objC<< " del loop de objetos"<<std::endl;
 			             double dEta2 =pow( itTrack->eta()-obj.eta(),2); 
 						 double dPhi2 =pow( itTrack->phi()-obj.phi(),2);
 						 double dR = sqrt(dPhi2+dEta2);
+						 
 						 //std::cout<<"energia del trigger object: "<<obj.energy()<<" pt: "<<obj.pt()<<" eta: "<<obj.eta()<<std::endl;
-						  if((dR<0.1)&&(abs(itTrack->pt() - obj.pt()) < 100)){muon_candidates++; m_count++;    if3++; 
+						  double ptotT , ptotO;
+						 ptotT = sqrt((itTrack->pt())*(itTrack->pt()) +itTrack->pz()*itTrack->pz());
+						 ptotO = sqrt(obj.pt()*obj.pt() + obj.pz()*obj.pz());
+						 
+						 //std::cout<<"energia del trigger object: "<<obj.energy()<<" pt: "<<obj.pt()<<" eta: "<<obj.eta()<<std::endl;
+						  if((dR<0.1)&&(abs(ptotT - ptotO) < 3)){muon_candidates++; m_count ++;    if3++; 
 							 // std::cout<<"momento: "<<itTrack->pt()<<std::endl;
-							    p_vec.push_back(itTrack->pt());
-							    e_vec.push_back(obj.energy());
+							   // p_vec.push_back(itTrack->pt());
+							    //e_vec.push_back(obj.energy());
 							    if(itTrack->charge() == 1){
-							    itTrack_vecP.push_back(itTrack);
-							    itTrackEnergyP.push_back(obj.energy());                          
+							    itTrack_vecP2.push_back(itTrack);
+							    //itTrackEnergyP.push_back(obj.energy());                          
 							    std::cout<<"                               energia (matching loop muon ) +: "<< obj.energy()<<std::endl;
 							    std::cout<<"                               pt track: "<< itTrack->pt()<<" pt obj: "<<obj.pt()<<std::endl;
 							                               }
 							    else if (itTrack->charge() == -1){
 							    itTrack_vecM.push_back(itTrack);
-							    itTrackEnergyM.push_back(obj.energy());
+							    //itTrackEnergyM.push_back(obj.energy());
 							    std::cout<<"                               energia (matching loop muon ) -: "<< obj.energy()<<std::endl;
 							    std::cout<<"                               pt track: "<< itTrack->pt()<<" pt obj: "<<obj.pt()<<std::endl;                   
 							                        }
@@ -485,12 +501,12 @@ itTrackEnergyM.clear();
 							    
 							    
 							    }
-						  
+						 
 		            }
-		          
+
 			   
 			     }
-			   }  //falta numero de 3d hitts
+			   }  //falta numero de 3d hitts 
 		    
 		     
 
@@ -504,13 +520,14 @@ std::cout<<" Muon candidates " <<muon_candidates<<std::endl;
  std::cout<<"numero de positivos " <<itTrack_vecP.size()<<std::endl;
  std::cout<<"numero de negativos "<<itTrack_vecM.size()<<std::endl;
  std::cout<<"numoero total "<<itTrack_vecM.size() + itTrack_vecP.size()<<std::endl;
- if(itTrack_vecM.size() + itTrack_vecP.size()>1){std::cout<<"mas de un muon"<<std::endl;}
+ if(itTrack_vecM.size() + itTrack_vecP2.size()>1){std::cout<<"mas de un muon"<<std::endl;}
  
 /************************************************************************** X canditate formation*/
  
 
   
-for(unsigned int i = 0; i<itTrack_vecP.size(); i ++){
+std::cout<<"segundo "<<itTrack_vecP2.size()<<std::endl;
+for(unsigned int i = 0; i<itTrack_vecP2.size(); i ++){
 	std::cout<<"muon primer if"<<std::endl;
 	float dv,dx,dy,dz ;
 	dv = 99999;
@@ -523,9 +540,9 @@ for(unsigned int i = 0; i<itTrack_vecP.size(); i ++){
 	  } 
     for(unsigned int j = 0; j<itTrack_vecM.size(); j ++){
     
-      dx = itTrack_vecP[i]->vx() - itTrack_vecM[j]->vx();
-      dy = itTrack_vecP[i]->vy() - itTrack_vecM[j]->vy();
-      dz = itTrack_vecP[i]->vz() - itTrack_vecM[j]->vz();
+      dx = itTrack_vecP2[i]->vx() - itTrack_vecM[j]->vx();
+      dy = itTrack_vecP2[i]->vy() - itTrack_vecM[j]->vy();
+      dz = itTrack_vecP2[i]->vz() - itTrack_vecM[j]->vz();
       dv = sqrt(dx*dx + dy*dy +dz*dz);
       if(dv< 0.1){
 		   if ( doubleCountErrV[j] ==0){
@@ -540,16 +557,16 @@ for(unsigned int i = 0; i<itTrack_vecP.size(); i ++){
 		  std::cout<<"Vertex displacement: "<<dv <<std::endl;
 	      // calcular masa invariante de par de electrones
 	      double px, py, pz, E,E1,E2, mMass;
-	      px = itTrack_vecP[i]->px() + itTrack_vecM[j]->px();
-	      py = itTrack_vecP[i]->py() + itTrack_vecM[j]->py();
-	      pz = itTrack_vecP[i]->pz() + itTrack_vecM[j]->pz();
+	      px = itTrack_vecP2[i]->px() + itTrack_vecM[j]->px();
+	      py = itTrack_vecP2[i]->py() + itTrack_vecM[j]->py();
+	      pz = itTrack_vecP2[i]->pz() + itTrack_vecM[j]->pz();
 	      //E = itTrackEnergyP[i] + itTrackEnergyM[j];
-	      E1 = itTrack_vecP[i]->pt();
-	      E2 = itTrack_vecP[j]->pt();
+	      E1 = sqrt(itTrack_vecP2[i]->pt()*itTrack_vecP2[i]->pt() + itTrack_vecP2[i]->pz()*itTrack_vecP2[i]->pz());
+	      E2 = sqrt(itTrack_vecM[j]->pt()*itTrack_vecM[j]->pt() + itTrack_vecM[j]->pz()*itTrack_vecM[j]->pz());
 	      E  = E1 + E2;
 	      
 	      std::cout<<"px: "<<px<<" py: "<<py<<" pz: "<<pz<< " E: "<<E<<" i: "<<i<<" j: "<<j<<std::endl;
-	      std::cout<<"energia +"<<itTrackEnergyP[i]<<" energia - :"<<itTrackEnergyM[j]<<std::endl;
+	     // std::cout<<"energia +"<<itTrackEnergyP[i]<<" energia - :"<<itTrackEnergyM[j]<<std::endl;
 	      mMass = sqrt(E*E - px*px -py*py -pz*pz);
 	      std::cout<<"masa calculada: "<<mMass<<std::endl;
 	      h_mass_mu->Fill(mMass);
@@ -561,13 +578,13 @@ for(unsigned int i = 0; i<itTrack_vecP.size(); i ++){
 	 
  }
  
-if(dv< 0.1){
+if(dv< 0.1){  // usar pointer a vertice para comparar                                                                                 ( para corregir)
 		  
 	// encontrar Lxy/S_xy
 							    
 	double vx, vy, L;
-	vx = itTrack_vecP[i]->vx();
-	vy = itTrack_vecP[i]->vy();
+	vx = itTrack_vecP2[i]->vx();
+	vy = itTrack_vecP2[i]->vy();
 	L = sqrt(vx*vx + vy*vy);
 	h_Lxy_m->Fill(L);
         }
@@ -579,299 +596,8 @@ if (doubleCountErrM){std::cout<<"Warning: double match (same electron , matched 
 
 //end muons
  
-/*
 
-
-
-
-//std::string pathName="HLT_HT250_v12";  // simu  v12,  electrones-> v2, muones-> v8
-std::string pathName= "HLT_HT250_DoubleDisplacedJet60_v1"; // electrones
-//std::string pathName= "HLT_HT250_DoubleDisplacedJet60_v7";// Muones
-
-
-
-//std::string pathName_e="HLT_DoublePhoton43_HEVT_v2"; // simu
-std::string pathName_e="HLT_DoublePhoton33_v2"; // electrones
-//std::string pathName_e="HLT_DoublePhoton33_HEVT_v3";//muon electron
-//std::string pathName_e="HLT_DoublePhoton38_HEVT_v2";// muon electron
-
-
-//std::string pathName_mu="HLT_L2DoubleMu23_NoVertex_v9"; //simu
-std::string pathName_mu="HLT_L2DoubleMu23_NoVertex_v1"; // electrones
-//std::string pathName_mu="HLT_L2DoubleMu23_NoVertex_v7"; // muon, electron
-
-
-
-
-bool passTrig=trigResults->accept(trigNames.triggerIndex(pathName));  
-
-bool passTrig_e = trigResults->accept(trigNames.triggerIndex(pathName_e));
- 
-bool passTrig_mu = trigResults->accept(trigNames.triggerIndex(pathName_mu));
-
-
-std::string filterName("hltHT250"); 
-//std::string filterName("hltL2DoubleMu23NoVertexL2PreFiltered"); 
-const trigger::TriggerObjectCollection & myTrigObjColl(trigEvent->getObjects());
-for (int i =0; i < (int)myTrigObjColl.size(); i++){
-	h1->Fill(myTrigObjColl[i].pt());
-	
-	}
-
-//it is important to specify the right HLT process for the filter, not doing this is a common bug
-trigger::size_type filterIndex = trigEvent->filterIndex(edm::InputTag(filterName,"",trigEventTag.process())); 
-if(filterIndex<trigEvent->sizeFilters()){ 
-    const trigger::Keys& trigKeys = trigEvent->filterKeys(filterIndex); 
-    const trigger::TriggerObjectCollection & trigObjColl(trigEvent->getObjects());
-    //now loop of the trigger objects passing filter
-    for(trigger::Keys::const_iterator keyIt=trigKeys.begin();keyIt!=trigKeys.end();++keyIt){ 
-      const trigger::TriggerObject& obj = trigObjColl[*keyIt];
-      //do what you want with the trigger objects, you have
-      //eta,phi,pt,mass,p,px,py,pz,et,energy accessors
-       std::cout<<obj.pt()<<"ss"<<std::endl;
-       //h1->Fill((float)obj.pt());
-       h2->Fill((float)obj.pt());
-       
-       
-       
-        for(TrackCollection::const_iterator itTrack = tracks->begin();
-       itTrack != tracks->end();
-       ++itTrack){
-		   if (itTrack->pt()>33 && itTrack->found() >=6 && itTrack->eta()<2){
-			   
-	    double dEta2 =pow( itTrack->eta()-obj.eta(),2); 
-		double dPhi2 =pow( itTrack->phi()-obj.phi(),2);
-		double dR = sqrt(dPhi2+dEta2);
-		histo->Fill(dR );
-
-			if (dR< 0.1){
-				 
-				muMass_hist->Fill(obj.mass());
-				
-				
-				
-				}
-			   
-			   }
-		   
-		   } 
-    }
-}
-
- 
- 
-myVec.clear();
-
-edm::Handle<reco::PFJetCollection> pfjetH;
-iEvent.getByLabel("kt6PFJets", pfjetH);
-
-//passHist->Sumw2();
-//divHist->Sumw2();
-//allHist->Sumw2();
-ptVec.clear();
-index.clear();
-
-
-for ( reco::PFJetCollection::const_iterator jet = pfjetH->begin(); jet != pfjetH->end(); ++jet ) {
-                double pt = jet->pt();
-// std::cout<<pt<<std::endl;
- //allHist->Fill(pt);
- ptVec.push_back(pt);
- 
-jetPt->Fill(pt); 
-
-if (passTrig){
-//jetPt_trig->Fill(pt);
-
-}
-
- }
-
-
-
-
-*max_element(ptVec.rbegin(), ptVec.rend())=-1.0;
-*max_element(ptVec.rbegin(), ptVec.rend())=-1.0;
-*max_element(ptVec.rbegin(), ptVec.rend())=-1.0;
-*max_element(ptVec.rbegin(), ptVec.rend())=-1.0;
-
-
-
-
-for(int i = 0; i<(int) ptVec.size(); i++){
-if( ptVec[i] == -1.0){index.push_back(i);}
-std::cout<<"vec"<<index[i]<<std::endl;
-}
-
-
-
-int i = 0;
-
-for ( reco::PFJetCollection::const_iterator jet = pfjetH->begin(); jet != pfjetH->end(); ++jet ) {
-                double px= jet->px();
-                double py= jet->py();
-                double pz= jet->pz();
-     if (i == index[0]){
-        v1.SetE( jet->energy());
-        v1.SetPx(px);
-        v1.SetPy(py);
-        v1.SetPz(pz);
-        std::cout<<"v1"<<std::endl;
-                    }
-
-      if (i == index[1]){
-        v2.SetE(jet->energy());
-        v2.SetPx(px);
-        v2.SetPy(py);
-        v2.SetPz(pz);
-        std::cout<<"v2"<<std::endl;
-                    }
-
-      if (i == index[2]){
-        v3.SetE(jet->energy());
-        v3.SetPx(px);
-        v3.SetPy(py);
-        v3.SetPz(pz);
-       std::cout<<"v3"<<std::endl;
-                    }
-
-     if (i == index[3]){
-        v4.SetE(jet->energy());
-        v4.SetPx(px);
-        v4.SetPy(py);
-        v4.SetPz(pz);
-  std::cout<<"v4"<<std::endl; 
-                    }
-    
-    i++;            
-
-    }
-
- vTot = v1 + v2 + v3 +v4;
-std::cout<<"la masa es: "<<vTot.M()<<std::endl;
-// jetMass->Fill(sqrt(vTot.M()));
-double mass = sqrt((vTot.E()*vTot.E())- (vTot.Px()*vTot.Px()) - (vTot.Py()*vTot.Py()) -(vTot.Pz()*vTot.Pz()));
-jetMass->Fill(mass);
-
-if (passTrig){ 
-
-	for ( reco::PFJetCollection::const_iterator jet = pfjetH->begin(); jet != pfjetH->end(); ++jet ) {
-    		double pt2 = jet->pt();
- std::cout<<pt2<<std::endl;
-//passHist->Fill(pt2);
-//divHist->Fill(pt2);
-}
-}
-
-if(passTrig_e){
- 
- ve = v1 +v2;
-  //eMass_hist->Fill(ve.M());
-}
-
-if(passTrig_mu){
-
-vmu = v1+v2;
-//muMass_hist->Fill(vmu.M());
-
-
-} // /*
-
-top2 = v1+v2;
-
-//top2Mass_hist->Fill(top2.M());
-
-
-
-
-
-
-
-
-
- //si el evento activo al trigger
-//Lepton *mylep  = new Lepton; 
-    //  mylep->pt=1.0;
-     // mylep->eta=5.0;
-//gDirectory->WriteObject(mylep,"mylep_dir");  
-
-//mylep->pt=1.0;
-//mylep->eta=1.5;
-        // leptons.pt = 1.0;
-        // leptons.eta = 2.0;
-
-/*	std::cout<<"true"<<std::endl;
-    const trigger::TriggerObjectCollection & trigObjColl(trigEvent->getObjects());
-   
-     for(TrackCollection::const_iterator itTrack = tracks->begin();
-       itTrack != tracks->end();
-       ++itTrack){ 
-            for(int i =0 ; i<(int)trigObjColl.size(); i++)
-       
-         {
-
-
-
-		double dEta2 =pow( itTrack->eta()-trigObjColl[i].eta(),2); 
-		double dPhi2 =pow( itTrack->phi()-trigObjColl[i].phi(),2);
-		double dR = sqrt(dPhi2+dEta2);
-		histo->Fill(dR );
-
-			if (dR< 0.1){
-                                    // leptons.track_pt.push_back(itTrack->pt());
-				    // leptons.track_eta.push_back(itTrack->eta());
-                                myVec.push_back(itTrack->pt());
-                                         // break;
-	                              			    }	
-
-
-
-	
-
- 	}			 
- 
-        // leptons.tracks.push_back(dummyTrack);
-
-           
-       }
- */
-   //}                 *descomentar
-/*else if (! passTrig){std::cout<<"no paso"<<std::endl;}*/
- /*for(TrackCollection::const_iterator itTrack = tracks->begin();
-       itTrack != tracks->end();
-       ++itTrack){
-           dummyTrack.pt=itTrack->pt();
-           dummyTrack.eta=itTrack->eta();
-	   all.tracks.push_back(dummyTrack);
-
-
-}*/
-//myTree->Fill();
-
-//edm::InputTag trigEventTag("hltTriggerSummaryAOD","","HLT"); //make sure have correct process on MC
-//data process=HLT, MC depends, Spring11 is REDIGI311X
-//edm::Handle<trigger::TriggerEvent> trigEvent; 
-//iEvent.getByLabel(trigEventTag,trigEvent);
-
-/*std::string filterName("HLT_DoublePhoton33_v2"); //hltSingleJet190Regional 
-
-//it is important to specify the right HLT process for the filter, not doing this is a common bug
-trigger::size_type filterIndex = trigEvent->filterIndex(edm::InputTag(filterName,"",trigEventTag.process())); 
-if(filterIndex<trigEvent->sizeFilters()){ 
-    const trigger::Keys& trigKeys = trigEvent->filterKeys(filterIndex); 
-    const trigger::TriggerObjectCollection & trigObjColl(trigEvent->getObjects());
-    //now loop of the trigger objects passing filter
-    for(trigger::Keys::const_iterator keyIt=trigKeys.begin();keyIt!=trigKeys.end();++keyIt){ 
-      const trigger::TriggerObject& obj = trigObjColl[*keyIt];
-      std::cout<<obj.pt()<<std::endl;
-      std::cout<<"************************"<<std::endl;     
- //do what you want with the trigger objects, you have
-      //eta,phi,pt,mass,p,px,py,pz,et,energy accessors
-    }
-    
-}//end filter size check*/
-
-
+std::cout<<"vuelta: "<< ++event<<std::endl;
 
 #ifdef THIS_IS_AN_EVENT_EXAMPLE
    Handle<ExampleData> pIn;
@@ -891,7 +617,7 @@ Analyzer::beginJob()
 {
 //gROOT = new TROOT();
 //gROOT->ProcessLine(".L Lepton.cc+")
-file = new TFile("data.root","recreate");
+file = new TFile("TT.root","recreate");
 //file = new TFile("simu.root","recreate");
 //const bool oldAddDir = TH1::AddDirectoryStatus();
 TH1::AddDirectory(true);
@@ -903,6 +629,7 @@ e_count=0;
 corr = 0;
 m_count=0;
 ev = 0;
+event=0;
 if1 = 0;
 if2 = 0;
 if3 = 0;
@@ -910,33 +637,15 @@ h_mass_mu = new TH1F("muonM","Muon mass",50,0,500);
 h_mass_e = new TH1F("electronM", "electron mass",100,0,500);
 h_Lxy_e = new TH1F("lxye", "Transverce Displacement (Electron channel)",20,0,50);
 h_Lxy_m = new TH1F("lxym", "Transverce Displacement (Muon channle)",20,0,50);
+
+//Tracking efficiency
+
+h_mEffSimuGen = new TH1F("mEffSimu", "generated muons impact parameter",50,0,50);
+h_mEffSimuGen->Sumw2();
+h_mEffSimu = new TH1F("mEff", "generated muons impact parameter",50,0,50);
+h_mEffSimu->Sumw2();
 //top2Mass_hist = new TH1F("top2M","top two jets mass",200,0,1000000);
 
-//myCanvas = new TCanvas("myCanvas");
-//myCanvas->SetGrid();
-//passHist->Sumw2();
-//h1 = new TH1F("h1", "h1 pass",50,0,500);
-//h2 = new TH1F("h2", "h2 pass",50,0,500);
-//allHist = new TH1F("all","total",15,0,100);
-//allHist->Sumw2();
-//divHist = new TH1F("eff","",15,0,100);
-//divHist->Sumw2();
-//divHist->SetMarkerStyle(8);
-//divHist->SetMarkerColor(2);
-//divHist->SetMarkerSize(2);
-//divHist->SetXTitle("Jet Pt (GeV)");
-//divHist->SetYTitle("Efficiency");
-//jetMass = new TH1F("mass","",100,0,1000);
-//jetMass->SetXTitle("MASS (GeV)");
-//jetMass->SetYTitle("Number of events");
-//jetPt = new TH1F("jet_pt", "",100,0,500);
-//jetPt_trig = new TH1F("jet_pt_trig", "", 100,0,500);
-//TH1::AddDirectory(oldAddDir);
-//myTree = new TTree("Events", "Event Tree");
-//mylep  = new Lepton();
-//myTree->Branch("leptons",&myVec, "Pt/std::vector<float>:eta"); 
-//myTree->Branch("leptons",&myVec);
-//myTree->Branch("All",&all.tracks,"Pt/f:eta");
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -952,7 +661,8 @@ std::cout<<"Muons found "<<m_count<<std::endl;
  std::cout<<"masa maxima encontrada (electron channel): "<<maxMassE<<std::endl;
  
  std::cout<<"masa maxima encontrada (muon channel): "<<maxMassM<<std::endl;
- //divHist->Divide(allHist);
+
+   h_mEffSimu->Divide(h_mEffSimuGen);
  std::cout<<"corr: "<<corr<<std::endl;
 file->Write();
 file->Close();
@@ -999,6 +709,7 @@ Analyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
  //desc.addUntracked<edm::InputTag>("tracks","ctfWithMaterialTracks");
  //descriptions.addDefault(desc);
 }
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(Analyzer);
