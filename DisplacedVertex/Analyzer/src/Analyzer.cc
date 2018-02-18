@@ -78,7 +78,7 @@ class Analyzer : public edm::EDAnalyzer {
       virtual void beginJob() ;
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-
+              bool cmsStandardCuts(const edm::Event&, const edm::EventSetup&);
       virtual void beginRun(edm::Run const&, edm::EventSetup const&);
       virtual void endRun(edm::Run const&, edm::EventSetup const&);
       virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
@@ -198,46 +198,10 @@ iEvent.getByLabel(trigResultsTag,trigResults);
 //const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
 
 
-edm::Handle<reco::VertexCollection> vertHand;
-//edm::Handle<reco::Vertex> vertHand;
-iEvent.getByLabel( "offlinePrimaryVertices",vertHand);
+
    
 /***************************************************************************Standar CMS Event Cuts*/
- /* Primary vertex must have at least 4 associated tracks
- * Each of these tracks must be at a distance < 2cm and < 24cm with respect to the primary vertex int the transverse and parallel beam direction respectively. 
- * If an event contains 10 or more tracks, at leas 25% of them must be "hight purity"
- *
- //int countVert = 0;
- //int countTrack = 0;
- std::cout<<"        Nueva vuelta      cambio ********"<<std::endl<<std::endl;
- for(reco::VertexCollection::const_iterator itVert = vertHand->begin();
-       itVert != vertHand->end();
-       ++itVert){
-		//countTrack = 0;
-		//double x,y,r;
-		//x = itVert->x();
-		//y = itVert->y();
-		//r = sqrt(x*x + y*y);   
-		
-         //std::cout<<"Vertice "<< countVert++<<" "<<r<<" con "<<itVert->tracksSize()<<" tracks. Es valido? "<<itVert->isValid()<<std::endl;		
-         
-          
-          //std::cout<<countTrack<<std::endl;
-          
-         int count2 = 0;
-         
-        for(reco::Vertex::trackRef_iterator itTrack = itVert->tracks_begin();
-       itTrack != itVert->tracks_end();
-       ++itTrack){ count2++;
-		   
-		   //std::cout<<typeid(itTrack).name()<<std::endl;
-		    // std::cout<<(**itTrack).theta()<<std::endl;
-		         
-		     }
-            
-		   }  
-   
-// const trigger::TriggerObjectCollection & e_trigObjColl(trigEvent->getObjects()); */
+std::cout<<"standard cuts "<<cmsStandardCuts(iEvent,iSetup)<<std::endl;
  
 /**************************************************************************Electron Identification Cuts*/
 //Tracks with the following characteristics are looked for:
@@ -667,6 +631,45 @@ std::cout<<"Muons found "<<m_count<<std::endl;
 file->Write();
 file->Close();
 }
+
+// First cut. 
+bool
+Analyzer::cmsStandardCuts(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
+
+ /* Primary vertex must have at least 4 associated tracks
+ * Each of these tracks must be at a distance < 2cm and < 24cm with respect to the primary vertex int the transverse and parallel beam direction respectively. 
+ * If an event contains 10 or more tracks, at leas 25% of them must be "hight purity"
+ */
+
+ int countTrack = 0;
+ int countVert = 0;
+ bool ret = false;
+edm::Handle<reco::VertexCollection> vertHand;
+iEvent.getByLabel( "offlinePrimaryVertices",vertHand);
+ 
+ for(reco::VertexCollection::const_iterator itVert = vertHand->begin();
+       itVert != vertHand->begin() +1;
+       ++itVert){
+	    countVert ++;
+		
+         
+        for(reco::Vertex::trackRef_iterator itTrack = itVert->tracks_begin();
+       itTrack != itVert->tracks_end();
+       ++itTrack){ 
+		   
+		   countTrack ++;
+		    // std::cout<<(**itTrack).theta()<<std::endl;
+		         
+		     }
+            
+		   }  
+   if (countTrack > 3)
+   {ret = true;}
+   return ret;
+
+}
+
 
 // ------------ method called when starting to processes a run  ------------
 void 
