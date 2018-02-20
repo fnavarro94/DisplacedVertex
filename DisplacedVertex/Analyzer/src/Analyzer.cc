@@ -423,9 +423,7 @@ std::cout<<"primero "<<itTrack_vecP.size()<<std::endl;
 		    //tips = d0/sigma;
 		   if (/*itTrack->quality((reco::TrackBase::TrackQuality)2) && itTrack->pt() > 33 && /*itTrack->found() > 6 && itTrack->eta()<2 && tips >2*/ true){
 			   
-			   //std::cout<<"Muons first if"<<std::endl;
-			   
-			   //std::cout<<"Charge: "<<itTrack->charge()<<std::endl;
+			 
 	            //now loop of the trigger objects passing filter
                 for(trigger::Keys::const_iterator keyIt=trigKeys.begin();keyIt!=trigKeys.end();++keyIt){ 
                 const trigger::TriggerObject& obj = m_trigObjColl[*keyIt];
@@ -642,6 +640,7 @@ Analyzer::cmsStandardCuts(const edm::Event& iEvent, const edm::EventSetup& iSetu
  * If an event contains 10 or more tracks, at leas 25% of them must be "hight purity"
  */
 
+ int highPurity = 0;
  int countTrack1 = 0;
  int countTrack2 = 0;
  int countVert = 0;
@@ -664,6 +663,15 @@ iEvent.getByLabel( "offlinePrimaryVertices",vertHand);
 		   dy = (**itTrack).vy();
 		   dz = (**itTrack).vz();
 		   dxy = sqrt(dx*dx +dy*dy);
+		   
+		   int hits = (**itTrack).numberOfValidHits();
+		   double chi2 = (**itTrack).chi2();
+		   
+		   if(hits>3 && chi2 < 1 ){
+			   highPurity++;
+			   
+			   
+			   }
 		   if((dxy< 2) && (dz<= 24))
 		   {countTrack1 ++;}
 		    countTrack2 ++;
@@ -673,7 +681,13 @@ iEvent.getByLabel( "offlinePrimaryVertices",vertHand);
             
 		   }  
    if (countTrack2 > 9){ // check that more than 25% are high purity
-	   
+	   if (highPurity > (0.25*(double)countTrack2)){
+		   purity = true;
+		   }
+		else {
+			
+			purity = false;
+			}
 	   }
    else {purity = true;}
    
