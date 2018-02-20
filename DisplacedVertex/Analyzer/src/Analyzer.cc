@@ -642,9 +642,11 @@ Analyzer::cmsStandardCuts(const edm::Event& iEvent, const edm::EventSetup& iSetu
  * If an event contains 10 or more tracks, at leas 25% of them must be "hight purity"
  */
 
- int countTrack = 0;
+ int countTrack1 = 0;
+ int countTrack2 = 0;
  int countVert = 0;
  bool ret = false;
+ bool purity = false;
 edm::Handle<reco::VertexCollection> vertHand;
 iEvent.getByLabel( "offlinePrimaryVertices",vertHand);
  
@@ -657,14 +659,25 @@ iEvent.getByLabel( "offlinePrimaryVertices",vertHand);
         for(reco::Vertex::trackRef_iterator itTrack = itVert->tracks_begin();
        itTrack != itVert->tracks_end();
        ++itTrack){ 
-		   
-		   countTrack ++;
+		   double dx, dy, dz,dxy;
+		   dx = (**itTrack).vx();
+		   dy = (**itTrack).vy();
+		   dz = (**itTrack).vz();
+		   dxy = sqrt(dx*dx +dy*dy);
+		   if((dxy< 2) && (dz<= 24))
+		   {countTrack1 ++;}
+		    countTrack2 ++;
 		    // std::cout<<(**itTrack).theta()<<std::endl;
 		         
 		     }
             
 		   }  
-   if (countTrack > 3)
+   if (countTrack2 > 9){ // check that more than 25% are high purity
+	   
+	   }
+   else {purity = true;}
+   
+   if (countTrack1 > 3 && purity )
    {ret = true;}
    return ret;
 
